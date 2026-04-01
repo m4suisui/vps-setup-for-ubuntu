@@ -18,6 +18,25 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
 if [[ $EUID -ne 0 ]]; then echo -e "${RED}[!]${NC} Must be run as root"; exit 1; fi
 if [[ ! -f /etc/os-release ]] || ! grep -qi 'ID=ubuntu' /etc/os-release; then echo -e "${RED}[!]${NC} Ubuntu only"; exit 1; fi
 
+# Ubuntu バージョン検証
+UBUNTU_VERSION=$(grep VERSION_ID /etc/os-release | tr -d '"' | cut -d= -f2)
+case "${UBUNTU_VERSION}" in
+  22.04|24.04|26.04) ;;
+  20.04)
+    echo -e "${RED}[!]${NC} Ubuntu 20.04: standard support ended (2025-04). ESM requires Ubuntu Pro"
+    echo -n "    Continue at your own risk? [y/N] "
+    read -r REPLY
+    if [[ ! "${REPLY}" =~ ^[Yy]$ ]]; then exit 1; fi
+    ;;
+  *)
+    echo -e "${RED}[!]${NC} Unsupported Ubuntu version: ${UBUNTU_VERSION}"
+    echo -e "${RED}[!]${NC} This script is tested on Ubuntu 22.04 / 24.04 / 26.04 LTS"
+    echo -n "    Continue anyway? [y/N] "
+    read -r REPLY
+    if [[ ! "${REPLY}" =~ ^[Yy]$ ]]; then exit 1; fi
+    ;;
+esac
+
 # ─── Parse Arguments ──────────────────────────────────────
 USERNAME=""
 PUBKEY=""

@@ -1,6 +1,6 @@
 # vps-setup
 
-One-command security hardening for Ubuntu 22.04 / 24.04 VPS.
+One-command security hardening for Ubuntu 22.04 / 24.04 / 26.04 LTS VPS.
 
 ## Overview
 

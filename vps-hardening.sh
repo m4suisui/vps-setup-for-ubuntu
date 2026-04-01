@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 #  VPS Base Hardening Script  v3
-#  Target: Ubuntu 22.04 / 24.04
+#  Target: Ubuntu 22.04 / 24.04 / 26.04 LTS
 #  Prerequisite: Run as root or with sudo / SSH connected
 #  Purpose: OS-level security hardening (works without nginx)
 #
@@ -23,6 +23,25 @@ info() { echo -e "${CYAN}[i]${NC} $*"; }
 
 if [[ $EUID -ne 0 ]]; then warn "Must be run as root"; exit 1; fi
 if [[ ! -f /etc/os-release ]] || ! grep -qi 'ID=ubuntu' /etc/os-release; then warn "Ubuntu only"; exit 1; fi
+
+# Ubuntu バージョン検証
+UBUNTU_VERSION=$(grep VERSION_ID /etc/os-release | tr -d '"' | cut -d= -f2)
+case "${UBUNTU_VERSION}" in
+  22.04|24.04|26.04) ;;
+  20.04)
+    warn "Ubuntu 20.04: standard support ended (2025-04). ESM requires Ubuntu Pro"
+    echo -n "    Continue at your own risk? [y/N] "
+    read -r REPLY
+    if [[ ! "${REPLY}" =~ ^[Yy]$ ]]; then exit 1; fi
+    ;;
+  *)
+    warn "Unsupported Ubuntu version: ${UBUNTU_VERSION}"
+    warn "This script is tested on Ubuntu 22.04 / 24.04 / 26.04 LTS"
+    echo -n "    Continue anyway? [y/N] "
+    read -r REPLY
+    if [[ ! "${REPLY}" =~ ^[Yy]$ ]]; then exit 1; fi
+    ;;
+esac
 
 export DEBIAN_FRONTEND=noninteractive
 
