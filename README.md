@@ -13,7 +13,7 @@ Local Machine                        VPS (fresh)
 
 2. ssh root@SERVER_IP ────────────→  logged in
 
-                                     3. curl -sL https://github.com/yourname/vps-setup/archive/main.tar.gz | tar xz
+                                     3. curl -sL https://github.com/m4suisui/vps-setup/archive/main.tar.gz | tar xz
                                         cd vps-setup-main
 
                                      4. (if using nginx: edit DOMAIN etc. in nginx-hardening.sh)
