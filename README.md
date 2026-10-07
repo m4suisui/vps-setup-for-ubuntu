@@ -2,35 +2,34 @@
 
 One-command security hardening for Ubuntu 22.04 / 24.04 / 26.04 LTS VPS.
 
-## Overview
+## Quick Start
 
-```
-Local Machine                        VPS (fresh)
-─────────────                        ──────────────────
+**1. On your PC** — copy your public key, then log in to the new VPS as root
 
-1. cat ~/.ssh/id_ed25519.pub
-   → copy the output
-
-2. ssh root@SERVER_IP ────────────→  logged in
-
-                                     3. curl -sL https://github.com/m4suisui/vps-setup-for-ubuntu/archive/main.tar.gz | tar xz
-                                        cd vps-setup-for-ubuntu-main
-
-                                     4. (if using nginx: edit DOMAIN etc. in nginx-hardening.sh)
-
-                                     5. bash setup.sh --user deploy --pubkey "paste-your-key-here" [--nginx]
-                                        ├─ [1] init-user.sh       create user + deploy SSH key
-                                        ├─ [2] vps-hardening.sh   harden OS
-                                        ├─ [3] nginx-hardening.sh (--nginx only, off by default)
-                                        └─ [4] verify.sh          PASS/FAIL all settings
-
-                                     6. exit
-
-7. ssh deploy@SERVER_IP ──────────→  from now on, use this
-                                     (root login is disabled)
+```bash
+cat ~/.ssh/id_ed25519.pub      # no key yet? run: ssh-keygen -t ed25519
+ssh root@SERVER_IP
 ```
 
-No SSH key yet? Run `ssh-keygen -t ed25519` once on your local machine. One key for life, reuse it across servers.
+**2. On the VPS** — download and run
+
+```bash
+curl -sL https://github.com/m4suisui/vps-setup-for-ubuntu/archive/main.tar.gz | tar xz
+cd vps-setup-for-ubuntu-main
+bash setup.sh --user deploy --pubkey "PASTE_YOUR_KEY_HERE"
+```
+
+**3. On your PC** — keep the root session open, and log in from a new terminal
+
+```bash
+ssh deploy@SERVER_IP
+```
+
+Logged in? Done. From now on use `deploy` (root login is disabled).
+
+> Using nginx? Edit `DOMAIN` etc. at the top of `nginx-hardening.sh`, then add `--nginx` to the `setup.sh` command.
+
+`setup.sh` runs, in order: `init-user.sh` (user + SSH key) → `vps-hardening.sh` (OS hardening) → `nginx-hardening.sh` (`--nginx` only) → `verify.sh` (PASS/FAIL check).
 
 ## What Gets Hardened
 
