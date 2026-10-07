@@ -11,12 +11,10 @@ cat ~/.ssh/id_ed25519.pub      # no key yet? run: ssh-keygen -t ed25519
 ssh root@SERVER_IP
 ```
 
-**2. On the VPS** — download and run
+**2. On the VPS** — run one line
 
 ```bash
-curl -sL https://github.com/m4suisui/vps-setup-for-ubuntu/archive/main.tar.gz | tar xz
-cd vps-setup-for-ubuntu-main
-bash setup.sh --user deploy --pubkey "PASTE_YOUR_KEY_HERE"
+curl -fsSL https://raw.githubusercontent.com/m4suisui/vps-setup-for-ubuntu/main/install.sh | bash -s -- --user deploy --pubkey "PASTE_YOUR_KEY_HERE"
 ```
 
 **3. On your PC** — keep the root session open, and log in from a new terminal
@@ -27,9 +25,11 @@ ssh deploy@SERVER_IP
 
 Logged in? Done. From now on use `deploy` (root login is disabled).
 
-> Using nginx? Edit `DOMAIN` etc. at the top of `nginx-hardening.sh`, then add `--nginx` to the `setup.sh` command.
+> Using nginx? Put the settings in front of `bash` and add `--nginx`:
+> `... | DOMAIN=example.org CERT_EMAIL=you@example.org APP_PORT=3000 bash -s -- --user deploy --pubkey "..." --nginx`
 
-`setup.sh` runs, in order: `init-user.sh` (user + SSH key) → `vps-hardening.sh` (OS hardening) → `nginx-hardening.sh` (`--nginx` only) → `verify.sh` (PASS/FAIL check).
+The scripts stay in `/opt/vps-setup` (re-check anytime: `sudo bash /opt/vps-setup/verify.sh`).
+`install.sh` runs `setup.sh`, which runs, in order: `init-user.sh` (user + SSH key) → `vps-hardening.sh` (OS hardening) → `nginx-hardening.sh` (`--nginx` only) → `verify.sh` (PASS/FAIL check).
 
 ## What Gets Hardened
 
@@ -43,7 +43,7 @@ Logged in? Done. From now on use `deploy` (root login is disabled).
   (set `AUTO_REBOOT=false` in `vps-hardening.sh` to disable)
 - Extras: core dumps disabled, USB storage disabled, MOTD stripped
 
-**Nginx** (`nginx-hardening.sh`) — edit config section before running
+**Nginx** (`nginx-hardening.sh`) — set DOMAIN / CERT_EMAIL first
 - TLS 1.2+1.3 only, strong ciphers, HSTS, OCSP stapling
 - Security headers: CSP, X-Frame-Options, CORP, COOP
 - Rate limiting (429) + fail2ban auto-ban
@@ -53,17 +53,20 @@ Logged in? Done. From now on use `deploy` (root login is disabled).
 
 ## Nginx Configuration
 
-Edit the top of `nginx-hardening.sh` before running:
+Pass as environment variables (as in Quick Start), or edit the top of `nginx-hardening.sh`:
 
 ```bash
-DOMAIN="example.com"
-APP_PORT="3000"
-CERT_EMAIL="you@example.com"
+DOMAIN="example.org"          # required
+CERT_EMAIL="you@example.org"  # required, Let's Encrypt notices
+APP_PORT="3000"               # backend port, default 3000
 ```
+
+The script stops if DOMAIN / CERT_EMAIL are left as placeholders.
 
 ## Verify Anytime
 
 ```bash
+cd /opt/vps-setup                            # where install.sh put the scripts
 sudo bash verify.sh                          # OS base
 sudo bash verify.sh --nginx                  # OS + nginx
 sudo bash verify.sh --allow-port 51820/udp   # also expose e.g. a WireGuard port
@@ -100,6 +103,7 @@ Ports can also be allowlisted with `VERIFY_ALLOWED_PORTS="51820/udp 8080/tcp"`.
 
 | File | Purpose |
 |---|---|
+| `install.sh` | One-line installer — downloads to `/opt/vps-setup`, runs `setup.sh` |
 | `setup.sh` | Orchestrator — runs everything in order |
 | `init-user.sh` | Creates sudo user with SSH key |
 | `vps-hardening.sh` | OS-level hardening |
