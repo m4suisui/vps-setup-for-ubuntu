@@ -10,6 +10,9 @@
 # ============================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/ssh-keys.sh"
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
 log()  { echo -e "${GREEN}[✓]${NC} $*"; }
 warn() { echo -e "${RED}[!]${NC} $*"; }
@@ -33,10 +36,9 @@ if [[ ! "${USERNAME}" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
   exit 1
 fi
 
-# Validate public key format (basic check)
-if [[ ! "${PUBKEY}" =~ ^ssh-(ed25519|rsa|ecdsa) ]]; then
-  warn "Invalid SSH public key format"
-  warn "Must start with ssh-ed25519, ssh-rsa, or ssh-ecdsa"
+# Validate before creating users or touching authorized_keys.
+if ! PUBKEY_FINGERPRINT=$(ssh_key_fingerprint "${PUBKEY}"); then
+  warn "Invalid SSH public key (OpenSSH could not parse it; ssh-keygen is required)"
   exit 1
 fi
 
@@ -67,10 +69,14 @@ chmod 700 "${SSH_DIR}"
 chown "${USERNAME}:${USERNAME}" "${SSH_DIR}"
 
 # Add key if not already present (idempotent)
-if [[ -f "${AUTH_KEYS}" ]] && grep -qF "${PUBKEY}" "${AUTH_KEYS}" 2>/dev/null; then
+if ssh_keys_contains_fingerprint "${AUTH_KEYS}" "${PUBKEY_FINGERPRINT}"; then
   info "SSH key already present for ${USERNAME}"
 else
-  echo "${PUBKEY}" >> "${AUTH_KEYS}"
+  # Keep the new key on its own line even if the existing file lacks a newline.
+  if [[ -s "${AUTH_KEYS}" ]] && [[ $(tail -c 1 "${AUTH_KEYS}" | wc -l) -eq 0 ]]; then
+    printf '\n' >> "${AUTH_KEYS}"
+  fi
+  printf '%s\n' "${PUBKEY}" >> "${AUTH_KEYS}"
   log "SSH key deployed for ${USERNAME}"
 fi
 

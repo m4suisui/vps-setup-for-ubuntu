@@ -10,6 +10,9 @@
 #  Exit code: 0 = all PASS / 1 = FAIL detected
 # ============================================================
 set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/ssh-keys.sh"
 # Do NOT use set -e (test failures should not abort the script)
 
 # ─── Output ───────────────────────────────────────────────
@@ -75,13 +78,17 @@ for u in "${SU_ARR[@]}"; do
     [[ "${AK_PERMS}" == "600" ]] \
       && pass "${u}: authorized_keys permissions 600" \
       || fail "${u}: authorized_keys permissions ${AK_PERMS} (expected: 600)"
-    HAS_KEY=true
-    break
+    if ssh_keys_has_valid_key "${UHOME}/.ssh/authorized_keys"; then
+      pass "${u}: at least one parseable SSH public key"
+      HAS_KEY=true
+    else
+      fail "${u}: no parseable SSH public key (ssh-keygen is required)"
+    fi
   fi
 done
 
 if [[ "${HAS_KEY}" != "true" ]]; then
-  fail "No sudo user has authorized_keys (lockout risk)"
+  fail "No sudo user has a parseable SSH public key (lockout risk)"
 fi
 
 section "SSH Hardening"

@@ -79,3 +79,28 @@ sudo bash verify.sh --nginx   # OS + nginx
 | `verify.sh` | PASS/FAIL verification of all settings |
 
 All scripts are idempotent — safe to re-run.
+
+### SSH public key validation
+
+Keep `lib/ssh-keys.sh` alongside the scripts when copying them to a server.
+`ssh-keygen` (Ubuntu's `openssh-client` package) must be available before running
+user initialization, hardening, or verification. These scripts fail closed if
+OpenSSH cannot parse a public key. Initialization accepts one key line, validates
+it before changing users or `authorized_keys`, and detects duplicates by SHA256
+fingerprint even when comments differ. Existing lines are preserved.
+
+Hardening and verification parse existing `authorized_keys` lines individually
+and require at least one parseable key for a sudo user. This is a syntax check;
+confirm an actual SSH login before closing the current session, since key
+options, server policy, and possession of the corresponding private key can
+still affect access.
+
+Run the isolated regression tests (Python 3 and OpenSSH required):
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The tests generate temporary Ed25519, RSA, and ECDSA keys and execute the relevant
+script sections with mocked account operations. They do not modify system users
+or SSH configuration.
