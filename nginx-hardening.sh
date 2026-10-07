@@ -10,9 +10,9 @@
 set -euo pipefail
 
 # ─── User Configuration ──────────────────────────────────
-DOMAIN="example.com"              # Production domain
-APP_PORT="3000"                   # Backend port
-CERT_EMAIL="you@example.com"      # Let's Encrypt notification email
+DOMAIN="${DOMAIN:-example.com}"   # Production domain (or env DOMAIN=)
+APP_PORT="${APP_PORT:-3000}"      # Backend port (or env APP_PORT=)
+CERT_EMAIL="${CERT_EMAIL:-you@example.com}"  # Let's Encrypt email (or env CERT_EMAIL=)
 ENABLE_SSL=true                   # false = HTTP only (for testing)
 RATE_LIMIT_RPS="10"               # Requests per second per IP
 RATE_LIMIT_BURST="20"             # Burst allowance
@@ -31,6 +31,13 @@ if [[ $EUID -ne 0 ]]; then warn "Must be run as root"; exit 1; fi
 if [[ ! -f /etc/os-release ]] || ! grep -qi 'ID=ubuntu' /etc/os-release; then warn "Ubuntu only"; exit 1; fi
 
 # ─── 0. Input Validation ─────────────────────────────────
+if [[ "${DOMAIN}" == "example.com" ]] || [[ "${CERT_EMAIL}" == "you@example.com" ]]; then
+  warn "DOMAIN / CERT_EMAIL are still placeholders"
+  warn "Edit the top of nginx-hardening.sh, or pass them as environment variables:"
+  warn "  DOMAIN=your.domain CERT_EMAIL=you@your.domain bash setup.sh ... --nginx"
+  exit 1
+fi
+
 if [[ ! "${DOMAIN}" =~ ^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$ ]]; then
   warn "Invalid DOMAIN: ${DOMAIN}"; exit 1
 fi

@@ -8,6 +8,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check shell syntax
-        run: bash -n init-user.sh vps-hardening.sh verify.sh lib/ssh-keys.sh
+        run: bash -n install.sh setup.sh init-user.sh vps-hardening.sh nginx-hardening.sh verify.sh lib/ssh-keys.sh
       - name: Test with real OpenSSH keys
         run: python3 -m unittest discover -s tests -v
