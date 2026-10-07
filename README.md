@@ -65,9 +65,37 @@ CERT_EMAIL="you@example.com"
 ## Verify Anytime
 
 ```bash
-sudo bash verify.sh           # OS base
-sudo bash verify.sh --nginx   # OS + nginx
+sudo bash verify.sh                          # OS base
+sudo bash verify.sh --nginx                  # OS + nginx
+sudo bash verify.sh --allow-port 51820/udp   # also expose e.g. a WireGuard port
+sudo bash verify.sh --sudo-users deploy      # only these accounts may have sudo
+sudo bash verify.sh --quick                  # skip slow scans (~1 min)
 ```
+
+`verify.sh` checks two things:
+
+1. **Applied settings are in effect** — SSH (effective `sshd -T` values), UFW, sysctl,
+   fail2ban (incl. that the jail actually reads logs), auto-updates (incl. timer,
+   fresh package lists, pending reboot, OS support end date), auditd (every rule loaded).
+2. **Nothing unexpected exists** — a setting can PASS while something extra is exposed:
+
+| Check | Result if found |
+|---|---|
+| Port listening on a public address, not SSH / `--allow-port` / nginx | FAIL |
+| UFW rule opening a non-allowlisted port to Anywhere | FAIL |
+| Docker container publishing a port publicly (bypasses UFW) | FAIL |
+| Extra UID 0 account, account with empty password | FAIL |
+| `/etc/ld.so.preload` in use, process running from `/tmp` etc. | FAIL |
+| SUID/SGID binary not from any package, modified package binary (`dpkg --verify`) | FAIL |
+| Unexpected sudo members, direct sudoers grants, NOPASSWD | WARN |
+| SSH keys on non-sudo accounts, system accounts with a shell | WARN |
+| User crontabs, cron jobs / systemd units not from packages | WARN |
+| Executables in temp dirs, processes running deleted binaries | WARN |
+
+WARN items may be legitimate (your own worker service, cron job, ...); confirm each
+once. Exit code is 1 only when a FAIL is found.
+
+Ports can also be allowlisted with `VERIFY_ALLOWED_PORTS="51820/udp 8080/tcp"`.
 
 ## Files
 
