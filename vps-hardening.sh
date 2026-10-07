@@ -9,6 +9,9 @@
 # ============================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/ssh-keys.sh"
+
 # ─── User Configuration ──────────────────────────────────
 RUN_APT_UPGRADE=true              # false = skip package upgrade (for CI, etc.)
 DISABLE_IPV6_RA=false             # true = disable IPv6 RA (static IPv6 only)
@@ -65,7 +68,7 @@ HAS_SSH_KEY=false
 IFS=',' read -ra SUDO_USER_ARRAY <<< "${SUDO_USERS}"
 for u in "${SUDO_USER_ARRAY[@]}"; do
   USER_HOME=$(getent passwd "${u}" 2>/dev/null | cut -d: -f6 || true)
-  if [[ -n "${USER_HOME}" ]] && [[ -s "${USER_HOME}/.ssh/authorized_keys" ]]; then
+  if [[ -n "${USER_HOME}" ]] && ssh_keys_has_valid_key "${USER_HOME}/.ssh/authorized_keys"; then
     HAS_SSH_KEY=true
     log "SSH key verified: ${u} (OK)"
     break
@@ -73,7 +76,7 @@ for u in "${SUDO_USER_ARRAY[@]}"; do
 done
 
 if [[ "${HAS_SSH_KEY}" != "true" ]]; then
-  warn "No SSH public keys found for sudo users"
+  warn "No parseable SSH public keys found for sudo users (ssh-keygen is required)"
   warn "Setting PasswordAuthentication no will lock you out"
   warn "Set up public key authentication first:"
   warn "  ssh-copy-id yourname@this-server"
