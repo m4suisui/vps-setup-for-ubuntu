@@ -13,8 +13,8 @@ Local Machine                        VPS (fresh)
 
 2. ssh root@SERVER_IP ────────────→  logged in
 
-                                     3. curl -sL https://github.com/m4suisui/vps-setup/archive/main.tar.gz | tar xz
-                                        cd vps-setup-main
+                                     3. curl -sL https://github.com/m4suisui/vps-setup-for-ubuntu/archive/main.tar.gz | tar xz
+                                        cd vps-setup-for-ubuntu-main
 
                                      4. (if using nginx: edit DOMAIN etc. in nginx-hardening.sh)
 
@@ -40,7 +40,8 @@ No SSH key yet? Run `ssh-keygen -t ed25519` once on your local machine. One key 
 - Kernel: SYN flood protection, ICMP hardening, source routing disabled
 - fail2ban: SSH jail (24h ban)
 - auditd: monitors /etc/shadow, sshd_config, sudo usage, cron
-- Auto-updates: unattended security patches
+- Auto-updates: unattended security patches, automatic reboot at 04:00 when required
+  (set `AUTO_REBOOT=false` in `vps-hardening.sh` to disable)
 - Extras: core dumps disabled, USB storage disabled, MOTD stripped
 
 **Nginx** (`nginx-hardening.sh`) — edit config section before running
