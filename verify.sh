@@ -201,8 +201,6 @@ declare -A SYSCTL_TESTS=(
   ["net.ipv4.icmp_ignore_bogus_error_responses"]="1"
   # TCP
   ["net.ipv4.tcp_tw_reuse"]="1"
-  # File Descriptors
-  ["fs.file-max"]="65535"
   # Kernel Info Leak Prevention
   ["kernel.dmesg_restrict"]="1"
   ["kernel.kptr_restrict"]="2"

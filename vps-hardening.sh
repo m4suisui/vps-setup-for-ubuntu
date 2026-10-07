@@ -14,6 +14,9 @@ source "${SCRIPT_DIR}/lib/ssh-keys.sh"
 
 # ─── User Configuration ──────────────────────────────────
 RUN_APT_UPGRADE=true              # false = skip package upgrade (for CI, etc.)
+AUTO_REBOOT=true                  # true = reboot automatically when a security
+                                  # update (e.g. kernel) requires it
+AUTO_REBOOT_TIME="04:00"          # local server time for the automatic reboot
 DISABLE_IPV6_RA=false             # true = disable IPv6 RA (static IPv6 only)
                                   # Keep false for cloud VPS (AWS, DO, Vultr, etc.)
                                   # as they rely on RA for IPv6 connectivity
@@ -124,12 +127,31 @@ Unattended-Upgrade::Allowed-Origins {
 Unattended-Upgrade::AutoFixInterruptedDpkg "true";
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
-Unattended-Upgrade::Automatic-Reboot "false";
 UUEOF
+
+# Without a reboot, an updated kernel is installed but never runs
+if [[ "${AUTO_REBOOT}" == "true" ]]; then
+  cat >> /etc/apt/apt.conf.d/50unattended-upgrades <<UUREBOOT
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "${AUTO_REBOOT_TIME}";
+UUREBOOT
+  info "Automatic reboot enabled at ${AUTO_REBOOT_TIME} when required"
+else
+  echo 'Unattended-Upgrade::Automatic-Reboot "false";' >> /etc/apt/apt.conf.d/50unattended-upgrades
+  info "Automatic reboot disabled: check /var/run/reboot-required regularly"
+fi
 
 # ─── 3. SSH Hardening ────────────────────────────────────
 log "SSH hardening"
-SSHD_HARDENING="/etc/ssh/sshd_config.d/99-hardening.conf"
+# sshd uses the FIRST value it reads for each option, and sshd_config.d/ is read
+# in lexical order. A "00-" prefix makes these settings win over files such as
+# 50-cloud-init.conf (which may set PasswordAuthentication yes).
+SSHD_HARDENING="/etc/ssh/sshd_config.d/00-hardening.conf"
+LEGACY_SSHD_HARDENING="/etc/ssh/sshd_config.d/99-hardening.conf"
+if [[ -f "${LEGACY_SSHD_HARDENING}" ]] && grep -q "Managed by vps-hardening.sh" "${LEGACY_SSHD_HARDENING}"; then
+  rm -f "${LEGACY_SSHD_HARDENING}"
+  info "Removed legacy ${LEGACY_SSHD_HARDENING} (replaced by ${SSHD_HARDENING})"
+fi
 cat > "${SSHD_HARDENING}" <<'SSHEOF'
 # Managed by vps-hardening.sh
 PermitRootLogin no
@@ -237,8 +259,8 @@ ${IPV6_RA_CONF}
 # ── TIME_WAIT Socket Reuse ──
 net.ipv4.tcp_tw_reuse = 1
 
-# ── File Descriptor Limit ──
-fs.file-max = 65535
+# fs.file-max is intentionally left at the kernel default: modern kernels size
+# it from RAM (far above 65535), so pinning it would lower the limit.
 
 # ── Kernel Information Leak Prevention ──
 # Restrict dmesg to root (blocks local privilege escalation info gathering)
