@@ -100,9 +100,9 @@ echo ""
 echo -e "${CYAN}[${TOTAL_STEPS}/${TOTAL_STEPS}] verify.sh${NC}"
 echo ""
 
-VERIFY_ARGS=()
+VERIFY_ARGS=("--sudo-users" "${USERNAME}")
 if [[ "${WITH_NGINX}" == "true" ]]; then
-  VERIFY_ARGS=("--nginx")
+  VERIFY_ARGS+=("--nginx")
 fi
 
 if bash "${SCRIPT_DIR}/verify.sh" "${VERIFY_ARGS[@]+"${VERIFY_ARGS[@]}"}"; then
